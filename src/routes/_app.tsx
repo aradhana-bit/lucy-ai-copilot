@@ -1,17 +1,27 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState, useNavigate, redirect } from "@tanstack/react-router";
 import {
   LayoutDashboard, FolderKanban, Bot, ListTodo, Calendar as CalIcon,
   FileText, HardDrive, Bell, CreditCard, User, Settings, LifeBuoy, Shield,
-  Search, Sparkles, Plus, Command,
+  Search, Sparkles, Plus, Command, LogOut,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useSession, SessionProvider } from "@/hooks/use-session";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app")({
-  component: AppShell,
+  ssr: false,
+  component: () => (
+    <SessionProvider>
+      <AppShell />
+    </SessionProvider>
+  ),
 });
 
 const nav = [
@@ -37,7 +47,59 @@ const nav = [
 ] as const;
 
 function AppShell() {
+  const { session, loading } = useSession();
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (!loading && !session) navigate({ to: "/auth", replace: true });
+  }, [loading, session, navigate]);
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", session?.user.id],
+    enabled: !!session,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url, email")
+        .eq("id", session!.user.id)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const { data: unread } = useQuery({
+    queryKey: ["unread-count", session?.user.id],
+    enabled: !!session,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("read", false);
+      return count ?? 0;
+    },
+    refetchInterval: 30_000,
+  });
+
+  const [q, setQ] = useState("");
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out");
+    navigate({ to: "/auth", replace: true });
+  };
+
+  if (loading || !session) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-primary/30" />
+      </div>
+    );
+  }
+
+  const name = profile?.display_name || session.user.email?.split("@")[0] || "You";
+  const initials = name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <aside className="hidden w-64 shrink-0 border-r border-border/60 bg-sidebar lg:flex lg:flex-col">
@@ -46,7 +108,7 @@ function AppShell() {
             <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-chart-5 text-primary-foreground"><Sparkles className="h-4 w-4" /></div>
             <div>
               <div className="text-sm font-semibold leading-none">Lucy</div>
-              <div className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">Team plan</div>
+              <div className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">Workspace</div>
             </div>
           </Link>
         </div>
@@ -71,48 +133,45 @@ function AppShell() {
             </div>
           ))}
         </div>
-        <div className="border-t border-sidebar-border p-3">
-          <div className="rounded-xl border border-border/70 bg-card/60 p-3">
-            <div className="text-xs font-medium">Agent hours</div>
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-              <div className="h-full rounded-full bg-gradient-to-r from-primary to-chart-5" style={{ width: "64%" }} />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>640 / 1,000h</span>
-              <Link to="/billing" className="text-primary hover:underline">Upgrade</Link>
-            </div>
-          </div>
-        </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border/60 bg-background/80 px-4 backdrop-blur-xl md:px-6">
           <div className="relative w-full max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search projects, tasks, documents…" className="pl-9 pr-16 bg-secondary/60 border-border/60" />
+            <Input
+              value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder="Search projects, tasks, documents…" className="pl-9 pr-16 bg-secondary/60 border-border/60"
+            />
             <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-border bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">
               <Command className="mr-0.5 inline h-2.5 w-2.5" />K
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant="outline" className="hidden md:inline-flex"><Plus className="mr-1 h-4 w-4" /> New project</Button>
-            <Link to="/notifications" className="grid h-9 w-9 place-items-center rounded-lg border border-border/60 bg-secondary/60 transition hover:bg-accent">
+            <Button asChild size="sm" variant="outline" className="hidden md:inline-flex">
+              <Link to="/projects"><Plus className="mr-1 h-4 w-4" /> New project</Link>
+            </Button>
+            <Link to="/notifications" className="relative grid h-9 w-9 place-items-center rounded-lg border border-border/60 bg-secondary/60 transition hover:bg-accent">
               <Bell className="h-4 w-4" />
+              {unread && unread > 0 ? <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] text-primary-foreground">{unread}</span> : null}
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 rounded-lg border border-border/60 bg-secondary/60 px-2 py-1.5 transition hover:bg-accent">
-                  <Avatar className="h-6 w-6"><AvatarFallback className="bg-primary/20 text-[10px] text-primary">AL</AvatarFallback></Avatar>
-                  <span className="hidden text-sm font-medium sm:inline">Ada Lovelace</span>
+                  <Avatar className="h-6 w-6">
+                    {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
+                    <AvatarFallback className="bg-primary/20 text-[10px] text-primary">{initials}</AvatarFallback>
+                  </Avatar>
+                  <span className="hidden text-sm font-medium sm:inline">{name}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Ada Lovelace</DropdownMenuLabel>
+                <DropdownMenuLabel>{name}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/settings">Settings</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/billing">Billing</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link to="/">Sign out</Link></DropdownMenuItem>
+                <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-4 w-4" /> Sign out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
