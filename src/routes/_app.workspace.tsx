@@ -253,7 +253,7 @@ function Workspace() {
                 </div>
               </div>
 
-              <ScrollArea className="flex-1" viewportRef={scrollRef}>
+              <div ref={scrollRef} className="flex-1 overflow-y-auto">
                 <div className="mx-auto max-w-3xl space-y-6 px-6 py-6">
                   {messages?.length === 0 && !streaming && (
                     <div className="rounded-2xl border border-dashed border-border/60 p-6 text-center text-sm text-muted-foreground">
@@ -275,7 +275,7 @@ function Workspace() {
                     </div>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
 
               <div className="border-t border-border/60 bg-background/60 px-4 py-4 md:px-6">
                 <div className="mx-auto max-w-3xl">
