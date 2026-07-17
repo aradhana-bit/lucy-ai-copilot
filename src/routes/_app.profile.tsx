@@ -32,7 +32,7 @@ function Profile() {
   });
 
   const save = useMutation({
-    mutationFn: async (patch: Record<string, unknown>) => {
+    mutationFn: async (patch: { display_name?: string; timezone?: string; avatar_url?: string }) => {
       const { error } = await supabase.from("profiles").update(patch).eq("id", user!.id);
       if (error) throw error;
     },

@@ -38,7 +38,7 @@ function Settings() {
   });
 
   const save = useMutation({
-    mutationFn: async (patch: Record<string, unknown>) => {
+    mutationFn: async (patch: { language?: string; timezone?: string; ai_model?: string }) => {
       const { error } = await supabase.from("preferences").upsert({ user_id: user!.id, ...patch });
       if (error) throw error;
     },
