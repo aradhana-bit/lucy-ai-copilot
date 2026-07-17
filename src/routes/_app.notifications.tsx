@@ -1,56 +1,82 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { CheckCheck, Bell, Bot, CreditCard, Users, Settings as SettingsIcon } from "lucide-react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, CheckCheck } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/app/page";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { notifications as seed } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useSession } from "@/hooks/use-session";
+import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/notifications")({
   head: () => ({ meta: [{ title: "Notifications — Lucy" }] }),
   component: Notifications,
 });
 
-const iconMap = { agent: Bot, billing: CreditCard, team: Users, system: SettingsIcon };
-
 function Notifications() {
-  const [items, setItems] = useState(seed);
-  const [filter, setFilter] = useState<string>("all");
-  const filtered = filter === "unread" ? items.filter(i => !i.read) : filter === "all" ? items : items.filter(i => i.kind === filter);
-  const unread = items.filter(i => !i.read).length;
+  const { user } = useSession();
+  const qc = useQueryClient();
+
+  const { data: items } = useQuery({
+    queryKey: ["notifications", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("notifications").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel(`notifs:${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => qc.invalidateQueries({ queryKey: ["notifications", user.id] }))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user, qc]);
+
+  const markAllRead = async () => {
+    await supabase.from("notifications").update({ read: true }).eq("read", false);
+    qc.invalidateQueries({ queryKey: ["notifications"] });
+    qc.invalidateQueries({ queryKey: ["unread-count"] });
+  };
 
   return (
     <>
       <PageHeader
         title="Notifications"
-        subtitle={`${unread} unread — everything Lucy wants you to see.`}
-        actions={<Button variant="outline" onClick={() => setItems(items.map(i => ({ ...i, read: true })))}><CheckCheck className="mr-1.5 h-4 w-4" /> Mark all read</Button>}
+        subtitle="Everything happening across your workspace."
+        actions={<Button variant="outline" onClick={markAllRead}><CheckCheck className="mr-1.5 h-4 w-4" /> Mark all read</Button>}
       />
-      <PageBody className="space-y-4">
-        <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border/60 bg-secondary/40 p-1 text-xs w-fit">
-          {["all","unread","agent","team","billing","system"].map(k => (
-            <button key={k} onClick={() => setFilter(k)} className={`rounded-md px-2.5 py-1 capitalize transition ${filter === k ? "bg-background shadow" : "text-muted-foreground hover:text-foreground"}`}>{k}</button>
-          ))}
-        </div>
-        <Card className="border-border/70 bg-card/70">
-          <ul className="divide-y divide-border/60">
-            {filtered.length === 0 && <li className="p-10 text-center text-sm text-muted-foreground"><Bell className="mx-auto mb-3 h-6 w-6" /> You're all caught up.</li>}
-            {filtered.map(n => {
-              const Icon = iconMap[n.kind];
-              return (
-                <li key={n.id} className={`flex items-start gap-4 px-4 py-4 ${n.read ? "" : "bg-primary/[0.03]"}`}>
-                  <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><Icon className="h-4 w-4" /></div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2"><div className="font-medium">{n.title}</div>{!n.read && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}</div>
-                    <div className="mt-0.5 text-sm text-muted-foreground">{n.body}</div>
+      <PageBody>
+        {items?.length === 0 ? (
+          <Card className="border-dashed p-12 text-center">
+            <Bell className="mx-auto h-8 w-8 text-muted-foreground" />
+            <h3 className="mt-3 font-medium">All caught up</h3>
+            <p className="mt-1 text-sm text-muted-foreground">No notifications yet.</p>
+          </Card>
+        ) : (
+          <Card className="divide-y divide-border/60 border-border/60">
+            {items?.map((n) => (
+              <div key={n.id} className={cn("flex items-start gap-3 p-4", !n.read && "bg-primary/5")}>
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary"><Bell className="h-4 w-4" /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {n.title} {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
                   </div>
-                  <Badge variant="outline" className="border-border/60">{n.at}</Badge>
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
+                  {n.body && <div className="mt-0.5 text-xs text-muted-foreground">{n.body}</div>}
+                  <div className="mt-1 text-[11px] text-muted-foreground">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</div>
+                </div>
+                <Badge variant="outline" className="capitalize">{n.kind}</Badge>
+              </div>
+            ))}
+          </Card>
+        )}
       </PageBody>
     </>
   );

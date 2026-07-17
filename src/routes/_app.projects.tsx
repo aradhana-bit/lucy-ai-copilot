@@ -1,118 +1,159 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Plus, LayoutGrid, List, Search, Filter, MoreHorizontal } from "lucide-react";
-import { PageHeader, PageBody, EmptyState } from "@/components/app/page";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { Plus, FolderKanban, Loader2, MoreHorizontal } from "lucide-react";
+import { PageHeader, PageBody } from "@/components/app/page";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { projects } from "@/lib/mock-data";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/use-workspace";
+import { useSession } from "@/hooks/use-session";
+import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_app/projects")({
   head: () => ({ meta: [{ title: "Projects — Lucy" }] }),
   component: Projects,
 });
 
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-primary/15 text-primary border-primary/30",
+  planning: "bg-chart-2/15 text-chart-2 border-chart-2/30",
+  paused: "bg-muted text-muted-foreground border-border",
+  shipped: "bg-chart-3/15 text-chart-3 border-chart-3/30",
+  archived: "bg-muted text-muted-foreground border-border",
+};
+
 function Projects() {
-  const [view, setView] = useState<"grid" | "list">("grid");
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState<string>("all");
-  const filtered = projects.filter(p =>
-    (status === "all" || p.status === status) &&
-    (p.name.toLowerCase().includes(q.toLowerCase()) || p.description.toLowerCase().includes(q.toLowerCase()))
-  );
+  const { data: workspace } = useWorkspace();
+  const { user } = useSession();
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+
+  const { data: projects, isLoading } = useQuery({
+    queryKey: ["projects", workspace?.id],
+    enabled: !!workspace,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, description, status, color, progress, updated_at")
+        .eq("workspace_id", workspace!.id)
+        .neq("status", "archived")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const create = useMutation({
+    mutationFn: async (input: { name: string; description: string }) => {
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({ workspace_id: workspace!.id, name: input.name, description: input.description, created_by: user!.id })
+        .select()
+        .single();
+      if (error) throw error;
+      await supabase.from("activity_logs").insert({
+        workspace_id: workspace!.id, project_id: data.id, user_id: user!.id,
+        kind: "project_created", message: `Created project ${data.name}`,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects", workspace?.id] });
+      toast.success("Project created");
+      setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <>
       <PageHeader
         title="Projects"
-        subtitle="Every product, campaign, and workstream Lucy is helping you build."
-        actions={<Button><Plus className="mr-1.5 h-4 w-4" /> New project</Button>}
+        subtitle="Every startup, product, or initiative you're building with Lucy."
+        actions={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="mr-1.5 h-4 w-4" /> New project</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Create project</DialogTitle></DialogHeader>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  create.mutate({ name: String(fd.get("name")), description: String(fd.get("description") || "") });
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" name="name" required placeholder="Atlas — B2B SaaS launch" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea id="description" name="description" rows={3} placeholder="What are you building?" />
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={create.isPending}>
+                    {create.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create project"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
       />
-      <PageBody className="space-y-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-full max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search projects" className="pl-9 bg-secondary/60" />
-          </div>
-          <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-secondary/40 p-1 text-xs">
-            {["all","active","planning","paused","shipped"].map(s => (
-              <button key={s} onClick={() => setStatus(s)} className={`rounded-md px-2.5 py-1 capitalize transition ${status === s ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}>{s}</button>
+      <PageBody className="space-y-4">
+        {isLoading ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-40 animate-pulse rounded-xl border border-border/60 bg-card/40" />
             ))}
           </div>
-          <Button size="sm" variant="outline"><Filter className="mr-1 h-3.5 w-3.5" /> More filters</Button>
-          <div className="ml-auto flex items-center gap-1 rounded-lg border border-border/60 bg-secondary/40 p-1">
-            <button onClick={() => setView("grid")} className={`grid h-7 w-7 place-items-center rounded-md ${view === "grid" ? "bg-background shadow" : "text-muted-foreground"}`}><LayoutGrid className="h-3.5 w-3.5" /></button>
-            <button onClick={() => setView("list")} className={`grid h-7 w-7 place-items-center rounded-md ${view === "list" ? "bg-background shadow" : "text-muted-foreground"}`}><List className="h-3.5 w-3.5" /></button>
-          </div>
-        </div>
-
-        {filtered.length === 0 ? (
-          <EmptyState title="No projects match your filters" description="Try clearing filters or creating a new project." action={<Button><Plus className="mr-1.5 h-4 w-4" /> New project</Button>} />
-        ) : view === "grid" ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map(p => (
+        ) : projects?.length === 0 ? (
+          <Card className="border-dashed p-12 text-center">
+            <FolderKanban className="mx-auto h-8 w-8 text-muted-foreground" />
+            <h3 className="mt-3 font-medium">No projects yet</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Create your first project to give Lucy context.</p>
+            <Button className="mt-4" onClick={() => setOpen(true)}><Plus className="mr-1.5 h-4 w-4" /> New project</Button>
+          </Card>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {projects?.map((p) => (
               <Link key={p.id} to="/projects/$id" params={{ id: p.id }}>
                 <Card className="group h-full border-border/70 bg-card/70 p-5 transition hover:border-border">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: p.color }} />
-                      <div className="text-base font-medium">{p.name}</div>
+                    <div className="grid h-10 w-10 place-items-center rounded-lg" style={{ background: `${p.color}25`, color: p.color as string }}>
+                      <FolderKanban className="h-5 w-5" />
                     </div>
-                    <MoreHorizontal className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                    <Badge variant="outline" className={`capitalize ${STATUS_COLORS[p.status]}`}>{p.status}</Badge>
                   </div>
-                  <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>
-                  <div className="mt-5"><Progress value={p.progress} /></div>
-                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <StatusBadge s={p.status} />
-                    <span>{p.agents} agents · {p.updatedAt}</span>
+                  <div className="mt-4 font-semibold leading-snug">{p.name}</div>
+                  <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.description}</div>
+                  <div className="mt-4">
+                    <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span>Progress</span><span>{p.progress}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                      <div className="h-full rounded-full bg-gradient-to-r from-primary to-chart-5" style={{ width: `${p.progress}%` }} />
+                    </div>
+                  </div>
+                  <div className="mt-3 text-[11px] text-muted-foreground">
+                    Updated {formatDistanceToNow(new Date(p.updated_at), { addSuffix: true })}
                   </div>
                 </Card>
               </Link>
             ))}
           </div>
-        ) : (
-          <Card className="border-border/70 bg-card/70">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Project</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Progress</TableHead>
-                  <TableHead>Agents</TableHead>
-                  <TableHead>Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(p => (
-                  <TableRow key={p.id}>
-                    <TableCell>
-                      <Link to="/projects/$id" params={{ id: p.id }} className="flex items-center gap-2 font-medium hover:text-primary">
-                        <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />{p.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell><StatusBadge s={p.status} /></TableCell>
-                    <TableCell><div className="flex items-center gap-2"><Progress value={p.progress} className="w-32" /><span className="text-xs text-muted-foreground">{p.progress}%</span></div></TableCell>
-                    <TableCell className="text-muted-foreground">{p.agents}</TableCell>
-                    <TableCell className="text-muted-foreground">{p.updatedAt}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
         )}
       </PageBody>
     </>
   );
-}
-
-function StatusBadge({ s }: { s: string }) {
-  const map: Record<string,string> = {
-    active: "bg-success/15 text-success border-success/30",
-    planning: "bg-primary/15 text-primary border-primary/30",
-    paused: "bg-muted text-muted-foreground border-border",
-    shipped: "bg-chart-5/15 text-chart-5 border-chart-5/30",
-  };
-  return <Badge variant="outline" className={`capitalize ${map[s] || ""}`}>{s}</Badge>;
 }
