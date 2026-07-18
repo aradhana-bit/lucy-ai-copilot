@@ -191,6 +191,8 @@ function AppShell() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette open={palette.open} onOpenChange={palette.setOpen} />
+      <OnboardingDialog />
     </div>
   );
 }
