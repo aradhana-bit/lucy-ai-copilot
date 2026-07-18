@@ -14,6 +14,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { supabase } from "@/integrations/supabase/client";
 import { useSession, SessionProvider } from "@/hooks/use-session";
 import { toast } from "sonner";
+import { CommandPalette, useCommandPalette } from "@/components/app/command-palette";
+import { OnboardingDialog } from "@/components/app/onboarding-dialog";
+import { identify, resetAnalytics } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_app")({
   ssr: false,
@@ -82,8 +85,14 @@ function AppShell() {
   });
 
   const [q, setQ] = useState("");
+  const palette = useCommandPalette();
+
+  useEffect(() => {
+    if (session?.user) identify(session.user.id, { email: session.user.email });
+  }, [session?.user]);
 
   const signOut = async () => {
+    resetAnalytics();
     await supabase.auth.signOut();
     toast.success("Signed out");
     navigate({ to: "/auth", replace: true });
@@ -136,16 +145,18 @@ function AppShell() {
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-border/60 bg-background/80 px-4 backdrop-blur-xl md:px-6">
-          <div className="relative w-full max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q} onChange={(e) => setQ(e.target.value)}
-              placeholder="Search projects, tasks, documents…" className="pl-9 pr-16 bg-secondary/60 border-border/60"
-            />
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-border bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => palette.setOpen(true)}
+            className="group relative flex w-full max-w-md items-center rounded-md border border-border/60 bg-secondary/60 px-3 py-2 text-left text-sm text-muted-foreground transition hover:bg-secondary"
+            aria-label="Open command palette"
+          >
+            <Search className="mr-2 h-4 w-4" />
+            <span className="flex-1 truncate">{q || "Search or jump to…"}</span>
+            <span className="pointer-events-none ml-2 rounded border border-border bg-background/80 px-1.5 py-0.5 text-[10px]">
               <Command className="mr-0.5 inline h-2.5 w-2.5" />K
-            </div>
-          </div>
+            </span>
+          </button>
           <div className="ml-auto flex items-center gap-2">
             <Button asChild size="sm" variant="outline" className="hidden md:inline-flex">
               <Link to="/projects"><Plus className="mr-1 h-4 w-4" /> New project</Link>
