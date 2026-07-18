@@ -52,12 +52,10 @@ export function OnboardingDialog() {
       const { error: spErr } = await supabase.from("startup_profiles").insert({
         workspace_id: workspace.id,
         name: form.name,
-        idea: form.idea,
-        industry: form.industry,
-        audience: form.audience,
-        stage: form.stage,
+        mission: form.idea,
+        target_audience: form.audience,
         business_model: form.model,
-        goal: form.goal,
+        vision: `Stage: ${form.stage} · Industry: ${form.industry}\n\nGoal: ${form.goal}`,
       });
       if (spErr) throw spErr;
 
