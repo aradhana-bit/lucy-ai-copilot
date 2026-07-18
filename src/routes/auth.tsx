@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
@@ -24,6 +25,21 @@ function Auth() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<null | "google" | "apple">(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const forgot = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const email = String(new FormData(e.currentTarget).get("email"));
+    setForgotLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setForgotLoading(false);
+    if (error) return toast.error(error.message);
+    toast.success("Check your email for the reset link");
+    setForgotOpen(false);
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -126,7 +142,12 @@ function Auth() {
                   <Input id="e1" name="email" type="email" required placeholder="you@company.com" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="p1">Password</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="p1">Password</Label>
+                    <button type="button" onClick={() => setForgotOpen(true)} className="text-xs text-muted-foreground hover:text-foreground">
+                      Forgot?
+                    </button>
+                  </div>
                   <Input id="p1" name="password" type="password" required placeholder="••••••••" />
                 </div>
                 <Button className="w-full" disabled={loading}>
@@ -171,6 +192,27 @@ function Auth() {
           </p>
         </motion.div>
       </div>
+
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reset your password</DialogTitle>
+            <DialogDescription>Enter your email and we'll send a secure reset link.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={forgot} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fp-email">Email</Label>
+              <Input id="fp-email" name="email" type="email" required placeholder="you@company.com" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setForgotOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={forgotLoading}>
+                {forgotLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send reset link"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

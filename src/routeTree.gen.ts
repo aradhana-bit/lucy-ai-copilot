@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -28,6 +29,11 @@ import { Route as AppBillingRouteImport } from './routes/_app.billing'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as AppProjectsIdRouteImport } from './routes/_app.projects.$id'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -121,6 +127,7 @@ const AppProjectsIdRoute = AppProjectsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AppAdminRoute
   '/billing': typeof AppBillingRoute
   '/calendar': typeof AppCalendarRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AppAdminRoute
   '/billing': typeof AppBillingRoute
   '/calendar': typeof AppCalendarRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_app/admin': typeof AppAdminRoute
   '/_app/billing': typeof AppBillingRoute
   '/_app/calendar': typeof AppCalendarRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/reset-password'
     | '/admin'
     | '/billing'
     | '/calendar'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/reset-password'
     | '/admin'
     | '/billing'
     | '/calendar'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/auth'
+    | '/reset-password'
     | '/_app/admin'
     | '/_app/billing'
     | '/_app/calendar'
@@ -242,11 +254,19 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ApiChatRoute: typeof ApiChatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -426,6 +446,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport

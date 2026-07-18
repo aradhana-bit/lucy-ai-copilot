@@ -463,11 +463,43 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_settings: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          id: boolean
+          name: string
+          role: string
+          support_email: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          id?: boolean
+          name?: string
+          role?: string
+          support_email?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          id?: boolean
+          name?: string
+          role?: string
+          support_email?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       preferences: {
         Row: {
           ai_model: string
+          ai_provider: string
           language: string
           notification_prefs: Json
+          onboarding_completed: boolean
           theme: string
           timezone: string
           updated_at: string
@@ -475,8 +507,10 @@ export type Database = {
         }
         Insert: {
           ai_model?: string
+          ai_provider?: string
           language?: string
           notification_prefs?: Json
+          onboarding_completed?: boolean
           theme?: string
           timezone?: string
           updated_at?: string
@@ -484,8 +518,10 @@ export type Database = {
         }
         Update: {
           ai_model?: string
+          ai_provider?: string
           language?: string
           notification_prefs?: Json
+          onboarding_completed?: boolean
           theme?: string
           timezone?: string
           updated_at?: string
@@ -569,6 +605,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prompt_templates: {
+        Row: {
+          body: string
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          body: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          body?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
       }
       roadmaps: {
         Row: {
