@@ -89,7 +89,6 @@ function Nav() {
           <a href="#faq" className="text-sm text-muted-foreground transition hover:text-foreground">FAQ</a>
         </nav>
         <div className="flex items-center gap-2">
-          <Link to="/auth" className="hidden text-sm text-muted-foreground transition hover:text-foreground sm:inline">Sign in</Link>
           <Link to="/dashboard">
             <Button size="sm" className="rounded-lg">Open Lucy <ArrowRight className="ml-1 h-3.5 w-3.5" /></Button>
           </Link>
