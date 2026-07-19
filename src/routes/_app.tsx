@@ -46,6 +46,7 @@ const nav = [
     { to: "/settings", label: "Settings", icon: Settings },
     { to: "/help", label: "Help Center", icon: LifeBuoy },
     { to: "/admin", label: "Admin", icon: Shield },
+    { to: "/security", label: "Security", icon: Shield },
   ]},
 ] as const;
 
