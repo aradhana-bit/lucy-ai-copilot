@@ -1,131 +1,193 @@
-# Lucy AI
+# Lucy
 
-### The AI Workforce That Builds Your Business
+[![Version](https://img.shields.io/badge/version-v0.1.0-blue)](#)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](#)
+[![FastAPI](https://img.shields.io/badge/FastAPI-Latest-009688)](#)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E)](#)
+[![Status](https://img.shields.io/badge/status-Active%20Development-orange)](#)
 
-*Build. Launch. Scale. All in one intelligent workspace.*
 
-![Status](https://img.shields.io/badge/Status-Active%20Development-blue)
-![Version](https://img.shields.io/badge/Version-v0.1.0--alpha-orange)
-![License](https://img.shields.io/badge/License-MIT-green)
 
----
 
-# About Lucy
+# Lucy
 
-Lucy is an AI-powered operating system built for founders, entrepreneurs, creators, freelancers, and startup teams.
+An AI-powered operating system for founders.
 
-Instead of relying on a single AI chatbot, Lucy coordinates specialized AI agents that work together to help users research ideas, build products, write code, create designs, manage projects, generate business documents, and launch companies.
-
-Our goal is simple:
-
-> **Turn ideas into successful businesses faster than ever before.**
+Lucy is a unified workspace that helps founders plan, build, and launch products by combining AI assistance, project management, documentation, research, and startup execution into a single platform.
 
 ---
 
-# Vision
+## Overview
 
-Build the world's most intelligent AI workforce for entrepreneurs.
+Building a startup typically requires dozens of disconnected tools for planning, writing, researching, designing, managing projects, and collaborating.
 
----
+Lucy brings these workflows together into one intelligent workspace designed specifically for founders and startup teams.
 
-# Mission
-
-Enable anyone to build and grow a company with the help of specialized AI agents working together as an integrated team.
+The platform combines specialized AI agents, persistent project memory, structured documentation, and project management to help users move from idea to execution.
 
 ---
 
-# Core Features
+## Features
 
-* AI Workspace
-* Multi-Agent Collaboration
-* Startup Project Management
-* AI Chat
-* Product Planning
-* Market Research
-* Business Documentation
-* Task Management
-* File Management
-* Knowledge Memory
-* Team Collaboration
-* Analytics Dashboard
-* Secure Authentication
-* Subscription Management
+### AI Workspace
 
----
+- Multi-provider AI support
+- Streaming conversations
+- Project-aware context
+- Conversation history
+- Conversation export
+- Markdown and code rendering
+- AI provider switching
 
-# AI Agents
+### Projects
 
-Lucy is powered by specialized AI agents including:
+- Project dashboard
+- Startup workspaces
+- Progress tracking
+- Milestones
+- Activity timeline
 
-* CEO Agent
-* Product Manager Agent
-* Research Agent
-* Developer Agent
-* Designer Agent
-* Marketing Agent
-* Finance Agent
-* Legal Agent
-* QA Agent
+### Documents
 
-Each agent has a dedicated role while collaborating with others to complete complex startup workflows.
+Generate and manage:
 
----
+- Product Requirement Documents (PRDs)
+- Business Plans
+- Technical Specifications
+- Marketing Plans
+- Pitch Decks
+- Product Roadmaps
+- Meeting Notes
 
-# Tech Stack
+### Startup Memory
 
-## Frontend
+Persistent project knowledge including:
 
-* Next.js 16
-* React 19
-* TypeScript
-* Tailwind CSS
-* shadcn/ui
-* Framer Motion
-* Zustand
-* TanStack Query
+- Vision
+- Business model
+- Brand guidelines
+- Technical decisions
+- Previous conversations
+- Generated documents
 
-## Backend
+### Task Management
 
-* FastAPI
-* Python
-* PostgreSQL
-* Redis
+- Kanban boards
+- List view
+- Calendar
+- Milestones
+- Priorities
+- Labels
 
-## AI
+### File Management
 
-* LangGraph
-* LangChain
-* PydanticAI
-* OpenAI
-* Anthropic
-* Google Gemini
+- Secure uploads
+- Folder organization
+- File previews
+- Version history
 
-## Authentication
+### Global Search
 
-* Supabase Auth
+Search across:
 
-## Database
+- Projects
+- Documents
+- Conversations
+- Tasks
+- Files
 
-* PostgreSQL
-* Redis
-* pgvector
+### Founder Dashboard
 
-## Storage
+Centralized overview of:
 
-* Supabase Storage
-
-## Deployment
-
-* Vercel
-* Railway
+- Active projects
+- Recent documents
+- AI conversations
+- Tasks
+- Startup progress
 
 ---
 
-# Folder Structure
+## AI Agents
+
+Lucy includes specialized AI agents designed for different startup functions.
+
+- CEO
+- Product Manager
+- Software Engineer
+- Research Analyst
+- UI/UX Designer
+- Marketing Strategist
+- Finance Advisor
+- Legal Advisor
+- QA Engineer
+
+---
+
+## Technology Stack
+
+### Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Framer Motion
+- Zustand
+- TanStack Query
+
+### Backend
+
+- FastAPI
+- Python
+- PostgreSQL
+- Redis
+
+### AI
+
+- LangGraph
+- LangChain
+- PydanticAI
+- OpenAI
+- Anthropic
+- Google Gemini
+- OpenRouter
+
+### Authentication
+
+- Supabase Auth
+
+### Database
+
+- PostgreSQL
+- pgvector
+- Redis
+
+### Storage
+
+- Supabase Storage
+
+### Deployment
+
+- Vercel
+- Railway
+
+### Analytics
+
+- PostHog
+
+### Monitoring
+
+- Sentry
+
+---
+
+## Project Structure
 
 ```text
-lucy-ai/
-│
+lucy/
 ├── frontend/
 ├── backend/
 ├── ai/
@@ -139,15 +201,16 @@ lucy-ai/
 
 ---
 
-# Getting Started
+## Getting Started
 
-## Clone the Repository
+### Clone the repository
 
 ```bash
 git clone https://github.com/aradhana-bit/lucy-ai-copilot.git
+cd lucy-ai-copilot
 ```
 
-## Install Frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -155,7 +218,7 @@ npm install
 npm run dev
 ```
 
-## Install Backend
+### Backend
 
 ```bash
 cd backend
@@ -165,81 +228,102 @@ uvicorn main:app --reload
 
 ---
 
-# Development Roadmap
+## Development Roadmap
 
-## Phase 1 — Foundation
+### Phase 1
 
-* Authentication
-* Dashboard
-* Projects
-* AI Chat
-* User Profiles
+- Authentication
+- Founder Dashboard
+- Projects
+- AI Workspace
+- User Profiles
 
-## Phase 2 — AI Workforce
+### Phase 2
 
-* CEO Agent
-* Developer Agent
-* Designer Agent
-* Research Agent
-* Marketing Agent
+- AI Agents
+- Startup Memory
+- Document Generation
+- Research Engine
 
-## Phase 3 — Collaboration
+### Phase 3
 
-* Team Workspaces
-* Shared Projects
-* Knowledge Memory
-* File Collaboration
+- Team Collaboration
+- Shared Workspaces
+- File Collaboration
+- Notifications
 
-## Phase 4 — Scale
+### Phase 4
 
-* Marketplace
-* Integrations
-* Enterprise Features
-* Mobile Applications
-
----
-
-# Design Principles
-
-* AI-First Experience
-* Minimal Interface
-* Premium User Experience
-* Fast Performance
-* Privacy by Design
-* Accessibility
-* Scalable Architecture
+- Marketplace
+- Browser Extension
+- Public API
+- Enterprise Features
+- Mobile Applications
 
 ---
 
-# Contributing
+## Design Principles
+
+Lucy is built around the following principles:
+
+- AI-first workflows
+- Minimal interface
+- Fast performance
+- Privacy by design
+- Accessibility
+- Scalable architecture
+
+---
+
+## Security
+
+Lucy is designed with security as a core principle.
+
+- Supabase Authentication
+- Row Level Security (RLS)
+- Secure API architecture
+- Protected routes
+- Environment variable management
+- Input validation
+- Rate limiting
+
+---
+
+## Contributing
 
 Contributions are welcome.
-
-If you would like to contribute:
 
 1. Fork the repository.
 2. Create a feature branch.
 3. Commit your changes.
-4. Open a Pull Request.
+4. Open a pull request.
 
 ---
 
-# License
+## License
 
 This project is licensed under the MIT License.
 
 ---
 
-# Founder
+## Founder
 
-**Aradhana**
+**Aaru**
 
-Building the future of AI-powered entrepreneurship.
+Founder of Lucy
 
 ---
 
-## Project Status
+## Status
 
-Lucy is currently in active development.
+**Version:** v0.1.0 Alpha
 
-Current Version: **v0.1.0 Alpha**
+Lucy is currently under active development. APIs, features, and architecture may evolve as the platform matures.
+
+---
+
+## Vision
+
+Our long-term goal is to build the operating system founders use to plan, build, launch, and scale companies.
+
+By combining specialized AI agents with persistent project knowledge and modern collaboration tools, Lucy aims to become the central workspace for startup execution.
