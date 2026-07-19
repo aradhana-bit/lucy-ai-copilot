@@ -132,7 +132,7 @@ function SecurityDashboard() {
       const { data, error } = await supabase
         .from("activity_logs")
         .select("id, kind, message, created_at, user_id, workspace_id")
-        .in("kind", SUSPICIOUS_KINDS as unknown as string[])
+        .in("kind", [...SUSPICIOUS_KINDS])
         .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw error;
