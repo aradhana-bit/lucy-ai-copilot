@@ -57,14 +57,21 @@ export const Route = createFileRoute("/api/chat")({
 
         const model = body.model || convo.model || "google/gemini-3-flash-preview";
 
-        // Persist user message
-        const { error: insertUserErr } = await supabase.from("messages").insert({
-          conversation_id: convo.id,
-          role: "user",
-          content: body.userMessage,
-          created_by: userId,
-        });
-        if (insertUserErr) return new Response(insertUserErr.message, { status: 500 });
+        // Persist user message (skip on regenerate)
+        if (!body.regenerate) {
+          const { error: insertUserErr } = await supabase.from("messages").insert({
+            conversation_id: convo.id,
+            role: "user",
+            content: body.userMessage,
+            created_by: userId,
+          });
+          if (insertUserErr) return new Response(insertUserErr.message, { status: 500 });
+        }
+
+        // Persist model choice on conversation
+        if (body.model && body.model !== convo.model) {
+          await supabase.from("conversations").update({ model: body.model }).eq("id", convo.id);
+        }
 
         // Bump conversation
         await supabase
