@@ -43,7 +43,7 @@ export const Route = createFileRoute("/api/chat")({
         const userId = userData.user.id;
 
         const body = (await request.json()) as Body;
-        if (!body.conversationId || !body.userMessage?.trim()) {
+        if (!body.conversationId || (!body.regenerate && !body.userMessage?.trim())) {
           return new Response("Bad request", { status: 400 });
         }
 
