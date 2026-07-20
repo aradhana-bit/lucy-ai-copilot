@@ -8,6 +8,7 @@ type Body = {
   conversationId: string;
   userMessage: string;
   model?: string;
+  regenerate?: boolean;
 };
 
 const SYSTEM_BASE = `You are Lucy, an AI operating system for founders. You coordinate specialized agents (Strategist, Researcher, Engineer, Designer, Writer, Analyst) to help ship a startup. You are concise, opinionated, and action-oriented. Use markdown. When useful, propose next steps as a short bulleted list.`;
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/api/chat")({
         const userId = userData.user.id;
 
         const body = (await request.json()) as Body;
-        if (!body.conversationId || !body.userMessage?.trim()) {
+        if (!body.conversationId || (!body.regenerate && !body.userMessage?.trim())) {
           return new Response("Bad request", { status: 400 });
         }
 
@@ -56,14 +57,21 @@ export const Route = createFileRoute("/api/chat")({
 
         const model = body.model || convo.model || "google/gemini-3-flash-preview";
 
-        // Persist user message
-        const { error: insertUserErr } = await supabase.from("messages").insert({
-          conversation_id: convo.id,
-          role: "user",
-          content: body.userMessage,
-          created_by: userId,
-        });
-        if (insertUserErr) return new Response(insertUserErr.message, { status: 500 });
+        // Persist user message (skip on regenerate)
+        if (!body.regenerate) {
+          const { error: insertUserErr } = await supabase.from("messages").insert({
+            conversation_id: convo.id,
+            role: "user",
+            content: body.userMessage,
+            created_by: userId,
+          });
+          if (insertUserErr) return new Response(insertUserErr.message, { status: 500 });
+        }
+
+        // Persist model choice on conversation
+        if (body.model && body.model !== convo.model) {
+          await supabase.from("conversations").update({ model: body.model }).eq("id", convo.id);
+        }
 
         // Bump conversation
         await supabase
