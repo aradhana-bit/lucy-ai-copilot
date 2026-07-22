@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "owner_settings read all authed" ON public.owner_settings;
+CREATE POLICY "owner_settings admin read" ON public.owner_settings FOR SELECT TO authenticated USING (private.has_role(auth.uid(), 'admin'::app_role));
